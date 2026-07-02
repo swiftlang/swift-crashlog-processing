@@ -108,7 +108,7 @@ targets.append(contentsOf: [
         "SwiftSymbolicate",
       ],
       swiftSettings: [
-        .interoperabilityMode(.Cxx),
+        .interoperabilityMode(.Cxx)
       ],
     )
   )
