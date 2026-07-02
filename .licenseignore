@@ -1,3 +1,4 @@
 Package.swift
 srv.cmd
 .swiftformatignore
+.githooks/pre-commit
