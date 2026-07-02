@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# Pre-commit hook for staged Swift files:
+#   1. Apply `swift-format format -i` and re-stage, so trivial reformatting
+#      is done transparently and included in the commit.
+#   2. Run `swift-format lint --strict` to catch any residual findings that
+#      the formatter can't fix (e.g. naming), blocking the commit if present.
+# Nothing outside the staged files is touched by the lint check.
+#
+# Enable with: git config core.hooksPath .githooks
+#
+# Runs on macOS/Linux and on Windows (Git for Windows executes /bin/sh hooks
+# through its bundled bash).
+
+# Locate swift-format. On Windows/Linux it's expected on PATH; on macOS it
+# often isn't, so fall back to the active toolchain via xcrun when available.
+SWIFT_FORMAT="$(command -v swift-format 2>/dev/null)"
+if [ -z "$SWIFT_FORMAT" ] && command -v xcrun >/dev/null 2>&1; then
+  SWIFT_FORMAT="$(xcrun --find swift-format 2>/dev/null)"
+fi
+if [ -z "$SWIFT_FORMAT" ]; then
+  echo "pre-commit: swift-format not found on PATH; skipping format check." >&2
+  exit 0
+fi
+
+# Staged Swift files (Added/Copied/Modified/Renamed).
+files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.swift')
+[ -z "$files" ] && exit 0
+
+# Format in place, then re-stage so the commit contains the formatted code.
+# shellcheck disable=SC2086
+"$SWIFT_FORMAT" format -i $files
+# shellcheck disable=SC2086
+git add $files
+
+# Lint in strict mode so any residual finding is a non-zero exit.
+# shellcheck disable=SC2086
+if ! "$SWIFT_FORMAT" lint --strict $files; then
+  echo "" >&2
+  echo "pre-commit: swift-format found issues that auto-formatting could not fix." >&2
+  echo "  Resolve the findings above, then re-stage and commit again." >&2
+  exit 1
+fi
+
+exit 0
