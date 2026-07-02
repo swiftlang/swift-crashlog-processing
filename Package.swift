@@ -109,11 +109,7 @@ targets.append(contentsOf: [
       ],
       swiftSettings: [
         .interoperabilityMode(.Cxx),
-        .unsafeFlags(swiftUnsafeFlags),
       ],
-      linkerSettings: [
-        .unsafeFlags(linkerUnsafeFlags)
-      ]
     )
   )
 #endif
