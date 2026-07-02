@@ -21,11 +21,18 @@
 #endif
 
 #if os(Windows)
-// Windows deprecates the POSIX names in favour of underscore-prefixed
-// variants; shadow them with the POSIX names so the call sites below stay
-// portable.
+  // Windows deprecates the POSIX names in favour of underscore-prefixed
+  // variants; shadow them with the POSIX names so the call sites below stay
+  // portable. _creat/_open are themselves deprecated, so creat routes through
+  // _sopen_s, the only non-deprecated way to obtain a file descriptor.
   private func getpid() -> Int32 { _getpid() }
-  private func creat(_ path: String, _ mode: Int32) -> Int32 { _creat(path, mode) }
+  private func creat(_ path: String, _ mode: Int32) -> Int32 {
+    var fd: Int32 = -1
+    guard _sopen_s(&fd, path, _O_CREAT | _O_TRUNC | _O_WRONLY, _SH_DENYNO, mode) == 0 else {
+      return -1
+    }
+    return fd
+  }
   @discardableResult private func close(_ fd: Int32) -> Int32 { _close(fd) }
   @discardableResult private func unlink(_ path: String) -> Int32 { _unlink(path) }
 #endif
