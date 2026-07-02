@@ -20,6 +20,16 @@
   internal import Musl
 #endif
 
+#if os(Windows)
+// Windows deprecates the POSIX names in favour of underscore-prefixed
+// variants; shadow them with the POSIX names so the call sites below stay
+// portable.
+  private func getpid() -> Int32 { _getpid() }
+  private func creat(_ path: String, _ mode: Int32) -> Int32 { _creat(path, mode) }
+  @discardableResult private func close(_ fd: Int32) -> Int32 { _close(fd) }
+  @discardableResult private func unlink(_ path: String) -> Int32 { _unlink(path) }
+#endif
+
 func level1() {
   level2()
 }
