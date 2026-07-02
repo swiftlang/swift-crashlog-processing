@@ -49,7 +49,7 @@ public class FoundationHTTPDownloader: HTTPDownloader {
 
     if debug {
       print(
-        "FoundationHTTPDownloader: downloading: \(url.absoluteString) from \(request.url?.host)")
+        "FoundationHTTPDownloader: downloading: \(url.absoluteString) from \(String(describing: request.url?.host))")
     }
 
     let (tempURL, response) =

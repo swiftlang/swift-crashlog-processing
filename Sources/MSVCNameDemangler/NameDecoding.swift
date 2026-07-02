@@ -87,7 +87,7 @@ extension MSVCDemanglerParser {
 
   func demangleAnonymousNamespace() -> String? {
     // Skip ?A then hex chars then @
-    var name = "`anonymous namespace'"
+    let name = "`anonymous namespace'"
     while let c = peek(), c != "@" {
       advance()
     }

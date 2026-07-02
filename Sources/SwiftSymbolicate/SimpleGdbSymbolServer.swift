@@ -111,7 +111,7 @@ public class SimpleGdbSymbolServer: SymbolServer {
     } catch let error {
       if debug {
         print(
-          "SimpleGdbSymbolServer: error: \(error.localizedDescription), \((error as? NSError)) : \((error as? NSError)?.userInfo)"
+          "SimpleGdbSymbolServer: error: \(error.localizedDescription), \(error as NSError) : \((error as NSError).userInfo)"
         )
       }
 
