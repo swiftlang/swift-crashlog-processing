@@ -257,6 +257,14 @@ extension MSVCDemanglerParser {
   // MARK: - Numbers
 
   func demangleNumber() -> Int64? {
+    // Number encoding has two schemes:
+    // For the numbers 1-10, they are encoded by '0' to '9' respectively.
+    // For the numbers 0 and anything 11 or higher, they are encoded by hex
+    // digits, with 'A'-'P' corresponding to the digits 0-F, respectively, and
+    // terminated with @.
+    // ABCDEFGHIJKLMNOP
+    // 0123456789ABCDEF
+
     guard let c = peek() else { return nil }
 
     var negative = false
@@ -268,14 +276,7 @@ extension MSVCDemanglerParser {
     guard let d = peek() else { return nil }
 
     var value: Int64
-    if d >= "1" && d <= "9" {
-      // Encoded as digit directly: '1' = 0, '2' = 1, ... '9' = 8
-      // Wait — actually in MSVC: '1' encodes 1, '2' encodes 2, etc for small numbers
-      // But the convention is: digits 1-9 encode values 1-9 (number + 0)
-      // Actually: digits 0-9 encode 1-10 in some contexts...
-      // In template non-type params: '0' = 1, '1' = 2, ..., '9' = 10? No.
-      // Looking at LLVM: encoded numbers use 1-9 for values 1-9,
-      // and A-P @ for hex-encoded larger numbers
+    if d >= "0" && d <= "9" {
       advance()
       value = Int64(String(d))!
     } else if d >= "A" && d <= "P" {
@@ -294,9 +295,6 @@ extension MSVCDemanglerParser {
         failed = true
         return nil
       }
-    } else if d == "0" {
-      advance()
-      value = 0
     } else {
       failed = true
       return nil

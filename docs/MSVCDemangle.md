@@ -31,8 +31,9 @@ Special scope pieces:
 ## Number Encoding
 
 Numbers used throughout the scheme are encoded as:
-- `1-9` — directly (value = digit, i.e. `1` encodes 0, `2` encodes 1, etc.)
+- `0-9` — directly (value = digit, i.e. `1` encodes 0, `2` encodes 1, etc.)
 - `A-P` followed by `@` — hex digit encoding (A=0, B=1, ..., P=15), multiple characters form the number MSB-first
+(used for the number 0 or numbers > 10)
 - `?<number>` — negative number
 
 ## Type Encoding
