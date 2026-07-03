@@ -18,10 +18,6 @@ import Runtime
 @_spi(Utils) import Runtime
 @_spi(CrashLog) import Runtime
 @_spi(Internal) import Runtime
-// this should be removed, just added it
-// here temporarily as the compiler is having
-// a bad hair day
-@_spi(Testing) import Runtime
 
 /// The output width strategy for formatted crash log output.
 public enum LogWidth {
@@ -99,7 +95,16 @@ public enum LogWidth {
     if case .fixed(let w) = width {
       formattedWidth = w
     } else {  // .auto
-      #if !os(Windows)
+      #if os(Windows)
+        var consoleInfo = CONSOLE_SCREEN_BUFFER_INFO()
+        if let outputStream,
+          GetConsoleScreenBufferInfo(
+            outputStream.handle,
+            &consoleInfo)
+        {
+          formattedWidth = Int(consoleInfo.dwSize.X)
+        }
+      #else
         var terminalSize = winsize(
           ws_row: 24, ws_col: 80,
           ws_xpixel: 1024, ws_ypixel: 768)

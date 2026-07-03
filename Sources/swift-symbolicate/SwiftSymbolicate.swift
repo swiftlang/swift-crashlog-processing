@@ -336,22 +336,28 @@ struct SwiftSymbolicate: AsyncParsableCommand {
       default: .never
       }
 
+    #if os(Windows)
+      let envPathSeparator = ";"
+    #else
+      let envPathSeparator = ":"
+    #endif
+
     let allSymbolPaths =
       symbolAdditionalPaths
       + (env["SWIFT_SYMBOLICATE_SYMBOL_PATHS"]?
-        .split(separator: ";")
+        .split(separator: envPathSeparator)
         .map(String.init) ?? [])
 
     let gdbServerURLs =
       gdbSymbolServers
       + (env["SWIFT_SYMBOLICATE_GDB_SERVERS"]?
-        .split(separator: ";")
+        .split(separator: envPathSeparator)
         .map(String.init) ?? [])
 
     let windowsServerURLs =
       windowsSymbolServers
       + (env["SWIFT_SYMBOLICATE_WINDOWS_SERVERS"]?
-        .split(separator: ";")
+        .split(separator: envPathSeparator)
         .map(String.init) ?? [])
 
     let httpDownloader = FoundationHTTPDownloader(debug: serversDebug)
