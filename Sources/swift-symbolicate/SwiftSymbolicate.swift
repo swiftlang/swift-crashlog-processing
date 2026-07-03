@@ -62,6 +62,8 @@ import SwiftSymbolicate
   internal import Glibc
 #elseif canImport(Musl)
   internal import Musl
+#else
+  #error("You need to add code for your platform")
 #endif
 
 #if os(Windows)
@@ -184,7 +186,6 @@ struct SwiftSymbolicate: AsyncParsableCommand {
     }
   }
 
-  // TODO: fix this on Windows
   var newline = "\n"
 
   var inputFileInterpreted: String {

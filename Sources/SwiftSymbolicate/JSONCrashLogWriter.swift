@@ -16,7 +16,6 @@ import Runtime
 @_spi(Formatting) import Runtime
 @_spi(CrashLog) import Runtime
 
-// TODO: fix this on Windows
 let newline = "\n"
 
 /// An in-memory `BacktraceJSONWriter` that accumulates JSON output into a string.

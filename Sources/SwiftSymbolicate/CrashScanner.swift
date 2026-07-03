@@ -80,11 +80,6 @@ public class CrashScanner {
     outputStream.open()
     inputStream.open()
 
-    // get the input file descriptor
-    // if isatty(), turn off line buffering with
-    // get input FILE *
-    // call setvbuf(stream, nil, _IONBF, 0)
-
     matchBufferPosition = 0
     writeBufferPosition = 0
 
