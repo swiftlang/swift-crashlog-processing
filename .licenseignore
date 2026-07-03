@@ -2,3 +2,4 @@ Package.swift
 srv.cmd
 .swiftformatignore
 .githooks/pre-commit
+Sources/CMinidumpFormat/dummy.c

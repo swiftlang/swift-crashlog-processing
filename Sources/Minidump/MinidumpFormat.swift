@@ -10,121 +10,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Foundation
+import CMinidumpFormat
 
-// On-disk binary format structures for Windows minidump files.
-// All fields are little-endian.
+// The on-disk binary format structures live in the CMinidumpFormat C header.
+// This file holds the non-layout format constants and enums.
 
-struct MinidumpHeader {
-  static let signature: UInt32 = 0x504D_444D  // "PMDM"
+extension MinidumpHeader {
+  static let expectedSignature: UInt32 = 0x504D_444D  // "PMDM"
   static let versionMask: UInt32 = 0xFFFF
   static let expectedVersion: UInt32 = 0xa793
-
-  var signature: UInt32
-  var version: UInt32
-  var numberOfStreams: UInt32
-  var streamDirectoryRVA: UInt32
-  var checksum: UInt32
-  var timeDateStamp: UInt32
-  var flags: UInt64
-}
-
-struct MinidumpDirectory {
-  var streamType: UInt32
-  var dataSize: UInt32
-  var rva: UInt32
-}
-
-struct MinidumpLocationDescriptor {
-  var dataSize: UInt32
-  var rva: UInt32
-}
-
-struct MinidumpMemoryDescriptor {
-  var startOfMemoryRange: UInt64
-  var memory: MinidumpLocationDescriptor
-}
-
-struct MinidumpThread {
-  var threadId: UInt32
-  var suspendCount: UInt32
-  var priorityClass: UInt32
-  var priority: UInt32
-  var environmentBlock: UInt64
-  var stack: MinidumpMemoryDescriptor
-  var context: MinidumpLocationDescriptor
-}
-
-struct MinidumpModule {
-  var baseOfImage: UInt64
-  var sizeOfImage: UInt32
-  var checksum: UInt32
-  var timeDateStamp: UInt32
-  var moduleNameRVA: UInt32
-  var versionInfo: VSFixedFileInfo
-  var cvRecord: MinidumpLocationDescriptor
-  var miscRecord: MinidumpLocationDescriptor
-  var reserved0: UInt64
-  var reserved1: UInt64
-}
-
-struct VSFixedFileInfo {
-  var signature: UInt32
-  var structVersion: UInt32
-  var fileVersionHigh: UInt32
-  var fileVersionLow: UInt32
-  var productVersionHigh: UInt32
-  var productVersionLow: UInt32
-  var fileFlagsMask: UInt32
-  var fileFlags: UInt32
-  var fileOS: UInt32
-  var fileType: UInt32
-  var fileSubtype: UInt32
-  var fileDateHigh: UInt32
-  var fileDateLow: UInt32
-}
-
-struct MinidumpExceptionRecord {
-  var exceptionCode: UInt32
-  var exceptionFlags: UInt32
-  var exceptionRecord: UInt64
-  var exceptionAddress: UInt64
-  var numberOfParameters: UInt32
-  var unusedAlignment: UInt32
-  var exceptionInformation:
-    (
-      UInt64, UInt64, UInt64, UInt64, UInt64,
-      UInt64, UInt64, UInt64, UInt64, UInt64,
-      UInt64, UInt64, UInt64, UInt64, UInt64
-    )
-}
-
-struct MinidumpExceptionStream {
-  var threadId: UInt32
-  var unusedAlignment: UInt32
-  var exceptionRecord: MinidumpExceptionRecord
-  var threadContext: MinidumpLocationDescriptor
-}
-
-struct MinidumpSystemInfo {
-  var processorArchitecture: UInt16
-  var processorLevel: UInt16
-  var processorRevision: UInt16
-  var numberOfProcessors: UInt8
-  var productType: UInt8
-  var majorVersion: UInt32
-  var minorVersion: UInt32
-  var buildNumber: UInt32
-  var platformId: UInt32
-  var csdVersionRVA: UInt32
-  var suiteMask: UInt16
-  var reserved: UInt16
-  var cpu:
-    (
-      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
-      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8,
-      UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8
-    )
 }
 
 enum MinidumpStreamType: UInt32 {

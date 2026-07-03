@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+import CMinidumpFormat
 import Foundation
 
 public enum MinidumpError: Error {
@@ -62,7 +63,7 @@ public struct MinidumpReader {
 
     let header: MinidumpHeader = load(at: 0)
 
-    guard header.signature == MinidumpHeader.signature else {
+    guard header.signature == MinidumpHeader.expectedSignature else {
       throw MinidumpError.invalidSignature
     }
 

@@ -42,7 +42,12 @@ var products: [PackageDescription.Product] =
 var targets: [PackageDescription.Target] =
   [
     .target(
-      name: "Minidump"
+      name: "CMinidumpFormat",
+      publicHeadersPath: "include"
+    ),
+    .target(
+      name: "Minidump",
+      dependencies: ["CMinidumpFormat"]
     ),
     .target(
       name: "MSVCNameDemangler",
