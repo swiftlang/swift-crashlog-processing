@@ -10,11 +10,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-/// Demangles an MSVC C++ mangled name into a human-readable string.
-///
-/// If the name cannot be demangled (not a mangled name, or too complex),
-/// returns the original string unchanged.
+/// Demangles an MSVC C++ mangled name into a human-readable string. Leaves the
+/// mangled name unchanged if unable to successfully demangle.
 public func demangleMSVC(_ mangledName: String) -> String {
+  // Note: this is a best-effort simplified version inspired by LLVM
+  // implementations and is intended to at least attempt MSVC demangling when
+  // you're running on a non Windows machine (mac/linux). On the native platform
+  // (Windows), we have official Microsoft supported API that is canonical.
   let parser = MSVCDemanglerParser(mangledName)
   return parser.demangle() ?? mangledName
 }
@@ -40,13 +42,11 @@ internal final class MSVCDemanglerParser {
   func demangle() -> String? {
     guard consume("?") else { return nil }
 
-    // MD5-hashed names — bail
+    // We cannot demangle MD5-hashed names, hashes are one-way.
     if consumeIf("?@") { return nil }
 
-    // Parse the qualified name
     guard let qualifiedName = demangleQualifiedName() else { return nil }
 
-    // After @@, read the function/variable encoding
     guard let code = peek() else { return nil }
 
     if code >= "0" && code <= "4" {
@@ -60,22 +60,14 @@ internal final class MSVCDemanglerParser {
     }
   }
 
-  // MARK: - Function Demangling
-
   func demangleFunction(name: [String]) -> String? {
     guard let accessCode = advance() else { return nil }
 
     let (access, isStatic, isVirtual) = parseAccessSpecifier(accessCode)
-    if failed { return nil }
+    guard !failed else { return nil }
 
-    let isMember = accessCode != "Y" && accessCode != "Z"
+    let isMember = access != nil
 
-    // Thunk adjustments — bail on complex cases
-    if accessCode == "G" || accessCode == "H" || accessCode == "O" || accessCode == "P"
-      || accessCode == "W" || accessCode == "X"
-    {
-      return nil
-    }
     if let c = peek(), c == "$" { return nil }
 
     // For non-static member functions, the encoding between the access
@@ -142,8 +134,6 @@ internal final class MSVCDemanglerParser {
     return parts.joined(separator: " ")
   }
 
-  // MARK: - Variable Demangling
-
   func demangleVariable(name: [String]) -> String? {
     guard let storageCode = advance() else { return nil }
 
@@ -167,8 +157,6 @@ internal final class MSVCDemanglerParser {
     return "\(varType) \(fullName)"
   }
 
-  // MARK: - Access Specifiers
-
   func parseAccessSpecifier(_ code: Character) -> (access: String?, isStatic: Bool, isVirtual: Bool)
   {
     switch code {
@@ -188,8 +176,6 @@ internal final class MSVCDemanglerParser {
     }
   }
 
-  // MARK: - Calling Conventions
-
   func demangleCallingConvention() -> String? {
     guard let code = advance() else { return nil }
     switch code {
@@ -208,8 +194,6 @@ internal final class MSVCDemanglerParser {
       return nil
     }
   }
-
-  // MARK: - Cursor Management
 
   @discardableResult
   func advance() -> Character? {
@@ -250,31 +234,3 @@ internal final class MSVCDemanglerParser {
     return true
   }
 }
-
-// Footnote: the initial version was created with Claude Opus 4.6 with the
-// prompt instructions...
-
-// create a new target called MSVCNameDemangler, the intended purpose is a
-// minimal demangler, so that we can make human readable versions of MSVC
-// mangled C++ function names when we are running on linux symbolicating a
-// crash log that was
-//  produced on windows, so we can display something more user friendly.
-//  In complicated cases, it is probably OK to just leave the mangled name,
-//  but it would be good to demangle most normal cases.
-
-// note that I sense checked all of the code, going through the logic and
-// fixing bugs Claude had written, but this should still be viewed as a work
-// in progress and of limited scope, it will be tested, and unit tests added,
-// for a fairly good list of standard mangled names, but is likely to contain
-// some bugs or opportunities for improvement/extension... however, this should
-// be good enough for our specific use case, which is symbolicating crash logs
-// cross platform - e.g. after symbolicating to a mangled name, attempt an
-// accurate demangled name, and if not possible, just report the original
-// name... it is more important that the parser is accurate than complete.
-// Also the calling code should allow the user to disable demangling, just as
-// the standard backtracer does. (The standard backtracer uses the Swift
-// runtime for swift symbol demangling, and the platform hosted C++
-// demangler for same-platform name demangling. This library is only needed
-// when symbolicating offline, and when doing it cross platform... specifically
-// symbolicating MSVC mangled C++ names in a backtrace on a non windows
-// machine, such as Linux or Darwin).

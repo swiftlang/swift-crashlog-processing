@@ -164,7 +164,7 @@ Example:
 
 This document was compiled by Claude Code (Claude Opus 4.6, Anthropic) from its training data knowledge. The information is derived from the following sources present in the model's training corpus:
 
-- **dotnet/symstore repository** -- the SSQP key conventions specification (`https://github.com/dotnet/symstore/blob/main/docs/specs/SSQP_Key_Conventions.md`)
+- **dotnet/symstore repository** -- the SSQP key conventions specification (`https://github.com/dotnet/symstore/blob/main/docs/specs/SSQP_Key_Conventions.md`, repository now archived)
 - **Microsoft PE/COFF specification** -- PE header fields (TimeDateStamp, SizeOfImage) and CodeView debug info structures (CV_INFO_PDB70, CV_INFO_PDB20) used to compute identifiers
 - **ELF specification and GNU extensions** -- the `NT_GNU_BUILD_ID` ELF note format and GNU build-id conventions
 - **Apple Mach-O format documentation** -- the `LC_UUID` load command used for Mach-O file identification

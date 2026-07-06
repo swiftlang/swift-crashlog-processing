@@ -207,11 +207,11 @@ Where `<hash>` is typically PE timestamp+size or PDB GUID+age. debuginfod is sim
 
 This document was compiled by Claude Code (Claude Opus 4.6, Anthropic) from its training data knowledge. No live web fetches were performed during generation. The information is derived from the following sources present in the model's training corpus:
 
-- **elfutils project documentation** — `debuginfod(8)` and `debuginfod-find(1)` man pages from the elfutils project at sourceware.org
+- **elfutils project documentation** — `debuginfod(8)` and `debuginfod-find(1)` man pages from the elfutils project at sourceware.org (https://sourceware.org/elfutils/Debuginfod.html; debuginfod was introduced in elfutils 0.178)
 - **elfutils source code** — the `debuginfod/` directory in the elfutils git repository (`https://sourceware.org/git/?p=elfutils.git`)
 - **GDB manual** — the "Separate Debug Files" section describing `.build-id` directory lookup conventions
 - **GNU ld documentation** — the `--build-id` linker option and `NT_GNU_BUILD_ID` ELF note specification
-- **Fedora wiki** — the original "Build ID" feature page (Fedora 8, 2007) that defined the `.build-id` directory layout convention
+- **Fedora wiki** — the original "Build ID" feature page (Fedora 8, 2007) that defined the `.build-id` directory layout convention (https://fedoraproject.org/wiki/Releases/FeatureBuildId)
 - **Frank Ch. Eigler's presentations** — GNU Tools Cauldron 2019 talk introducing the debuginfod protocol
 - **Linux distribution documentation** — Fedora, Ubuntu, Debian, and Arch Linux documentation on their public debuginfod server deployments
 

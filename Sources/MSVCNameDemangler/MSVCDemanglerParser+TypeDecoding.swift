@@ -11,9 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 extension MSVCDemanglerParser {
-
-  // MARK: - Type Parsing
-
   func demangleType(isParameter: Bool) -> String? {
     guard let c = peek() else { return nil }
 
@@ -49,12 +46,10 @@ extension MSVCDemanglerParser {
       return demangleDollarDollarType()
     }
 
-    // Pointer types
     if c == "P" || c == "Q" || c == "R" || c == "S" {
       return demanglePointerType()
     }
 
-    // Reference
     if c == "A" {
       advance()
       return demangleReferenceType(rvalue: false)
@@ -79,17 +74,13 @@ extension MSVCDemanglerParser {
       return demangleFunctionSignatureType()
     }
 
-    // Array type
     if c == "Y" {
       advance()
       return demangleArrayType()
     }
 
-    // Primitive types
     return demanglePrimitiveType()
   }
-
-  // MARK: - Primitive Types
 
   func demanglePrimitiveType() -> String? {
     guard let c = advance() else { return nil }
@@ -161,8 +152,6 @@ extension MSVCDemanglerParser {
     }
   }
 
-  // MARK: - Pointer Types
-
   func demanglePointerType() -> String? {
     guard let ptrCode = advance() else { return nil }
 
@@ -197,14 +186,14 @@ extension MSVCDemanglerParser {
     // Pointee qualifiers
     let quals = demangleQualifierCode()
 
-    // Check if this is a function pointer (6) or member function pointer (8)
+    // We only support non-member function pointers for now
     if let c = peek(), c == "6" {
       advance()
       guard let fnType = demangleFunctionSignatureType() else { return nil }
       return fnType + " " + ptrQual + ext
     }
     if let c = peek(), c == "8" {
-      // Member function pointer — bail for now
+      // we do not support member function pointers at this time
       return nil
     }
 
@@ -235,8 +224,6 @@ extension MSVCDemanglerParser {
     return qualStr + " " + referent + " " + refSymbol
   }
 
-  // MARK: - Tag Types
-
   func demangleTagType() -> String? {
     guard let tag = advance() else { return nil }
     let keyword: String
@@ -258,8 +245,6 @@ extension MSVCDemanglerParser {
     return "enum " + name.joined(separator: "::")
   }
 
-  // MARK: - Function Type
-
   func demangleFunctionSignatureType() -> String? {
     guard let callingConv = demangleCallingConvention() else { return nil }
     guard let retType = demangleType(isParameter: false) else { return nil }
@@ -273,14 +258,9 @@ extension MSVCDemanglerParser {
       advance()
       return demangleFunctionSignatureType()
     }
-    if let c = peek(), c == "8" {
-      // member function type — bail
-      return nil
-    }
+    // we don't support member function pointers at this time
     return nil
   }
-
-  // MARK: - Array Types
 
   func demangleArrayType() -> String? {
     // Rank (number of dimensions)
@@ -297,8 +277,6 @@ extension MSVCDemanglerParser {
     let dimStr = dims.map { "[\($0)]" }.joined()
     return elementType + dimStr
   }
-
-  // MARK: - Parameter Lists
 
   func demangleParameterList() -> String? {
     var params: [String] = []
@@ -332,8 +310,6 @@ extension MSVCDemanglerParser {
     }
     return params.joined(separator: ",")
   }
-
-  // MARK: - Qualifiers
 
   struct Qualifiers {
     var isConst: Bool = false
@@ -374,8 +350,6 @@ extension MSVCDemanglerParser {
     if q.isEmpty { return type }
     return q + " " + type
   }
-
-  // MARK: - Type Back-References
 
   func memorizeTypeBackref(_ typeStr: String) {
     guard typeBackrefs.count < 10 else { return }

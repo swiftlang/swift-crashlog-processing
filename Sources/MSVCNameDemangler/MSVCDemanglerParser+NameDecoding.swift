@@ -11,9 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 extension MSVCDemanglerParser {
-
-  // MARK: - Qualified Names
-
   func demangleQualifiedName() -> [String]? {
     var segments: [String] = []
 
@@ -95,8 +92,6 @@ extension MSVCDemanglerParser {
     return name
   }
 
-  // MARK: - Templates
-
   func demangleTemplate() -> String? {
     // Consume ?$
     guard consume("?"), consume("$") else {
@@ -157,7 +152,7 @@ extension MSVCDemanglerParser {
         guard let num = demangleNumber() else { return nil }
         return String(num)
       }
-      // Other $ forms ($1, $H, $I, $J, $E, $F, $G) — bail for now
+
       return nil
     }
 
@@ -167,11 +162,8 @@ extension MSVCDemanglerParser {
       return ""
     }
 
-    // Type argument
     return demangleType(isParameter: true)
   }
-
-  // MARK: - Operators
 
   func demangleOperatorName() -> String? {
     guard let code = advance() else { return nil }
@@ -192,7 +184,7 @@ extension MSVCDemanglerParser {
     case "8": return "operator=="
     case "9": return "operator!="
     case "A": return "operator[]"
-    case "B": return "operator T"  // conversion — simplified
+    case "B": return "operator T"
     case "C": return "operator->"
     case "D": return "operator*"
     case "E": return "operator++"
@@ -249,7 +241,7 @@ extension MSVCDemanglerParser {
       default: return nil
       }
     default:
-      // Many special names we don't handle — bail
+      // unknown
       return nil
     }
   }
@@ -302,8 +294,6 @@ extension MSVCDemanglerParser {
 
     return negative ? -value : value
   }
-
-  // MARK: - Back-References
 
   func memorizeNameBackref(_ name: String) {
     guard nameBackrefs.count < 10 else { return }

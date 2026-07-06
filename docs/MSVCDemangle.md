@@ -4,7 +4,7 @@
 
 Microsoft Visual C++ uses a proprietary name-mangling scheme to encode C++ symbol information (namespaces, types, calling conventions, access modifiers) into linker-visible symbol names. All mangled symbols begin with a `?` prefix.
 
-This document describes the encoding rules as implemented in the LLVM demangler.
+The name mangling scheme is not publicly documented, this document describes the encoding rules as implemented in the LLVM MSVC demangler.
 
 ## Top-Level Structure
 
@@ -264,11 +264,11 @@ Parameter pack separators: `$S`, `$$V`, `$$$V`, `$$Z`
 
 ## Back-References
 
-To compress repeated names and types, MSVC uses a back-reference system:
+To compress repeated names and types, MSVC uses a back-reference system to remember a shortcut for some names:
 
 - Up to 10 names and 10 parameter types can be memorized
 - Back-references are encoded as a single digit `0-9`
-- Names are memorized on first occurrence if they're "complex enough"
+- Names are memorized on first occurrence
 - Single-character primitive types are not memorized (they don't save space)
 - The back-reference table is shared across the entire mangled symbol
 
@@ -311,7 +311,7 @@ Breaking down `?foo@@YAHXZ`:
 - `X` — parameter `void`
 - `Z` — end of function encoding
 
-### Templates with Class Type Parameters
+### Examples: Templates with Class Type Parameters
 
 | Mangled | Demangled |
 |---------|-----------|
@@ -319,7 +319,7 @@ Breaking down `?foo@@YAHXZ`:
 | `??0?$L@V?$H@PAH@PR26029@@@PR26029@@QAE@XZ` | `__thiscall PR26029::L<class PR26029::H<int *>>::L<class PR26029::H<int *>>(void)` |
 | `?template_template_fun@@YAXU?$Type@U?$Thing@USecond@@$00@@USecond@@@@@Z` | `void __cdecl template_template_fun(struct Type<struct Thing<struct Second, 1>, struct Second>)` |
 
-### Templates with Function Pointer Parameters
+### Examples: Templates with Function Pointer Parameters
 
 | Mangled | Demangled |
 |---------|-----------|
@@ -327,20 +327,20 @@ Breaking down `?foo@@YAHXZ`:
 | `??$template_template_specialization@$$A6AXU?$Type@U?$Thing@USecond@@$00@@USecond@@@@@Z@@YAXXZ` | `void __cdecl template_template_specialization<void __cdecl(struct Type<struct Thing<struct Second, 1>, struct Second>)>(void)` |
 | `??$FunctionPointerTemplate@$1?spam@@YAXXZ@@YAXXZ` | `void __cdecl FunctionPointerTemplate<&void __cdecl spam(void)>(void)` |
 
-### Variadic Templates with Mixed Types
+### Examples: Variadic Templates with Mixed Types
 
 | Mangled | Demangled |
 |---------|-----------|
 | `??$variadic_fn_template@HHD$$BY01D@@YAXABH0ABDAAY01$$CBD@Z` | `void __cdecl variadic_fn_template<int, int, char, char[2]>(int const &, int const &, char const &, char const (&)[2])` |
 
-### Templates with Array Parameters
+### Examples: Templates with Array Parameters
 
 | Mangled | Demangled |
 |---------|-----------|
 | `??0?$Class@$$BY04$$CBH@@QAE@XZ` | `__thiscall Class<int const[5]>::Class<int const[5]>(void)` |
 | `??0?$Class@$$BY04QAH@@QAE@XZ` | `__thiscall Class<int *const[5]>::Class<int *const[5]>(void)` |
 
-### Templates with Qualified Function Types
+### Examples: Templates with Qualified Function Types
 
 | Mangled | Demangled |
 |---------|-----------|
@@ -349,20 +349,20 @@ Breaking down `?foo@@YAHXZ`:
 | `?d@FTypeWithQuals@@3U?$S@$$A8@@GBAHXZ@1@A` | `struct FTypeWithQuals::S<int __cdecl(void) const &> FTypeWithQuals::d` |
 | `?g@FTypeWithQuals@@3U?$S@$$A8@@HBAHXZ@1@A` | `struct FTypeWithQuals::S<int __cdecl(void) const &&> FTypeWithQuals::g` |
 
-### Member Function Pointers as Template Arguments
+### Examples: Member Function Pointers as Template Arguments
 
 | Mangled | Demangled |
 |---------|-----------|
 | `??$CallMethod@US@@$1?f@1@QAEXXZ@@YAXAAUS@@@Z` | `void __cdecl CallMethod<struct S, &public: void __thiscall S::f(void)>(struct S &)` |
 | `??$ReadField@UU@@$J??_91@$BA@AEA@A@A@@@YAXAAUU@@@Z` | `void __cdecl ReadField<struct U, {[thunk]: __thiscall U::vcall'{0, {flat}}, 0, 0, 0}>(struct U &)` |
 
-### STL-Style Templates
+### Examples: STL-Style Templates
 
 | Mangled | Demangled |
 |---------|-----------|
 | `??$emplace_back@ABH@?$vector@HV?$allocator@H@std@@@std@@QAE?A?<decltype-auto>@@ABH@Z` | `<decltype-auto> __thiscall std::vector<int, class std::allocator<int>>::emplace_back<int const &>(int const &)` |
 
-### Member Pointers and Data Members
+### Examples: Member Pointers and Data Members
 
 | Mangled | Demangled |
 |---------|-----------|
@@ -372,7 +372,7 @@ Breaking down `?foo@@YAHXZ`:
 | `?memptrtofun7@@3R8B@@EAAP6AHXZXZEQ1@` | `int (__cdecl * (__cdecl B::*volatile memptrtofun7)(void))(void)` |
 | `?memptrtofun9@@3P8B@@EAAQ6AHXZXZEQ1@` | `int (__cdecl *const (__cdecl B::*memptrtofun9)(void))(void)` |
 
-### Complex Pointer and Array Types
+### Examples: Complex Pointer and Array Types
 
 | Mangled | Demangled |
 |---------|-----------|
@@ -381,19 +381,19 @@ Breaking down `?foo@@YAHXZ`:
 | `?foo_qay144cbh@@YAX$$QAY144$$CBH@Z` | `void __cdecl foo_qay144cbh(int const (&&)[5][5])` |
 | `?foo_aay144h@@YAXAAY144H@Z` | `void __cdecl foo_aay144h(int (&)[5][5])` |
 
-### Operator Overloads in Templates
+### Examples: Operator Overloads in Templates
 
 | Mangled | Demangled |
 |---------|-----------|
 | `??$?HH@S@@QEAAAEANH@Z` | `double & __cdecl S::operator+<int>(int)` |
 
-### Conversion Operators with Templated Return Types
+### Examples: Conversion Operators with Templated Return Types
 
 | Mangled | Demangled |
 |---------|-----------|
 | `??$?BH@CompoundTypeOps@@QAE?AU?$Bar@U?$Foo@H@@@@XZ` | `struct Bar<struct Foo<int>> __thiscall CompoundTypeOps::operator<int> struct Bar<struct Foo<int>>(void)` |
 
-### Back-References in Action
+### Examples: Back-References in Action
 
 | Mangled | Demangled |
 |---------|-----------|
@@ -401,7 +401,7 @@ Breaking down `?foo@@YAHXZ`:
 
 Note: the `0` near the end is a back-reference to the first parameter type, avoiding re-encoding the entire `QBQ6AXXZ` sequence.
 
-### Lambda and Local Types
+### Examples: Lambda and Local Types
 
 | Mangled | Demangled |
 |---------|-----------|
@@ -409,15 +409,10 @@ Note: the `0` near the end is a back-reference to the first parameter type, avoi
 
 ---
 
-## Appendix: Sources
+## Appendix: Source code used to derive this document
 
-This document was compiled by Claude Code (Claude Opus 4.6, Anthropic) from its training data knowledge and from reading the LLVM demangler source code. The information is derived from the following sources:
-
-- **LLVM MicrosoftDemangle.cpp** — `/Users/carlpeto/Code/swift-project/llvm-project/llvm/lib/Demangle/MicrosoftDemangle.cpp` — the main parser implementation (Apache 2.0 with LLVM Exceptions)
-- **LLVM MicrosoftDemangle.h** — `/Users/carlpeto/Code/swift-project/llvm-project/llvm/include/llvm/Demangle/MicrosoftDemangle.h` — type declarations and parser state
-- **LLVM MicrosoftDemangleNodes.h** — `/Users/carlpeto/Code/swift-project/llvm-project/llvm/include/llvm/Demangle/MicrosoftDemangleNodes.h` — AST node definitions and enumerations
-- **LLVM MicrosoftDemangleNodes.cpp** — `/Users/carlpeto/Code/swift-project/llvm-project/llvm/lib/Demangle/MicrosoftDemangleNodes.cpp` — output formatting and node printing
-- **LLVM demangler test suite** — `/Users/carlpeto/Code/swift-project/llvm-project/llvm/test/Demangle/ms-*.test` — mangled/demangled pairs used to verify the implementation (test files: ms-templates, ms-templates-memptrs, ms-mangle, ms-arg-qualifiers, ms-operators, ms-nested-scopes, ms-cxx11, ms-cxx14, ms-cxx20, ms-conversion-operators)
-- **Reverse engineering by the LLVM community** — the MSVC mangling scheme has no official specification; the LLVM implementation is derived from community reverse-engineering efforts and testing against `undname.exe` (the Microsoft demangler)
-
-**Note**: Microsoft has never published a formal specification of their C++ name mangling scheme. The encoding rules in this document are derived from the LLVM implementation which was built through reverse engineering and empirical testing. While highly accurate, edge cases may exist that are not fully documented here.
+- **LLVM MicrosoftDemangle.cpp** — `llvm/lib/Demangle/MicrosoftDemangle.cpp` — the main parser implementation (Apache 2.0 with LLVM Exceptions)
+- **LLVM MicrosoftDemangle.h** — `llvm/include/llvm/Demangle/MicrosoftDemangle.h` — type declarations and parser state
+- **LLVM MicrosoftDemangleNodes.h** — `llvm/include/llvm/Demangle/MicrosoftDemangleNodes.h` — AST node definitions and enumerations
+- **LLVM MicrosoftDemangleNodes.cpp** — `llvm/lib/Demangle/MicrosoftDemangleNodes.cpp` — output formatting and node printing
+- **LLVM demangler test suite** — `llvm/test/Demangle/ms-*.test` — mangled/demangled pairs used to verify the implementation (test files: ms-templates, ms-templates-memptrs, ms-mangle, ms-arg-qualifiers, ms-operators, ms-nested-scopes, ms-cxx11, ms-cxx14, ms-cxx20, ms-conversion-operators)
