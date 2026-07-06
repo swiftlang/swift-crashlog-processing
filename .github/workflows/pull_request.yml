@@ -15,3 +15,10 @@ jobs:
   soundness:
     name: Soundness
     uses: swiftlang/github-workflows/.github/workflows/soundness.yml@0.0.11
+    with:
+      # Disabled for now: this tool builds against unreleased `@_spi` Runtime
+      # internals and needs an in-development toolchain, so it cannot build on
+      # the stock container the check uses, and there is no stable API baseline
+      # to diff against yet. Re-enable if this becomes a package that other
+      # projects depend on the API.
+      api_breakage_check_enabled: false
