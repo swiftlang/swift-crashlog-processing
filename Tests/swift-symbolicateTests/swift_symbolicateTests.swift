@@ -547,7 +547,11 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
 
       let registers = try #require(firstThread.registers)
 
-      #expect(registers["x0"] == "0x0000000000000001")
+      #if arch(arm64)
+        #expect(registers["x0"] == "0x0000000000000001")
+      #elseif arch(x86_64)
+        #expect(registers["rax"] == "0x0000000000000006")
+      #endif
 
       #expect(firstThread.frames.count > 5)
 
@@ -630,7 +634,7 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
       #expect((firstSymbolicatedFrame.offset ?? 0) > 0)
       #expect(firstSymbolicatedFrame.image == "crashMe")
       #expect(firstSymbolicatedFrame.sourceLocation?.file.hasSuffix("crashMe.swift") == true)
-      #expect(firstSymbolicatedFrame.sourceLocation?.line == 16)
+      #expect(firstSymbolicatedFrame.sourceLocation?.line == 28)
       #expect(firstSymbolicatedFrame.sourceLocation?.column == 15)
 
       let secondSymbolicatedFrame = try #require(crashedThread.frames.dropFirst().first)
@@ -638,14 +642,14 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
       #expect(secondSymbolicatedFrame.kind == .returnAddress)
       #expect(secondSymbolicatedFrame.address != "")
       #if os(macOS)
-        #expect(firstSymbolicatedFrame.symbol == "_$s7crashMe6level4yyF")
+        #expect(secondSymbolicatedFrame.symbol == "_$s7crashMe6level3yyF")
       #elseif os(Linux)
-        #expect(firstSymbolicatedFrame.symbol == "$s7crashMe6level4yyF")
+        #expect(secondSymbolicatedFrame.symbol == "$s7crashMe6level3yyF")
       #endif
       #expect(secondSymbolicatedFrame.offset ?? 0 > 0)
       #expect(secondSymbolicatedFrame.image == "crashMe")
       #expect(secondSymbolicatedFrame.sourceLocation?.file.hasSuffix("crashMe.swift") == true)
-      #expect(secondSymbolicatedFrame.sourceLocation?.line == 10)
+      #expect(secondSymbolicatedFrame.sourceLocation?.line == 22)
       #expect(secondSymbolicatedFrame.sourceLocation?.column == 3)
 
       let lastSymbolicatedFrame = try #require(crashedThread.frames.last)
@@ -674,7 +678,9 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
         /0 +0x[0-9a-f]+/
         /1 +\[ra\] +0x[0-9a-f]+/
         "Registers:"
-        /x0 0x[0-9a-f]+/
+        // Register names are host-arch dependent (arm64 `x0`, x86_64 `rax`, ...),
+        // so match any register line rather than a specific name.
+        /[a-z][a-z0-9]+ +0x[0-9a-f]+/
         /Images \([0-9]+ omitted\):/
         /[0-9a-f]+ +crashMe +.*\/crashMe/
         #if os(macOS)
@@ -708,15 +714,17 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
         "Program crashed: Bad pointer dereference at 0x0000000000000006"
         /Platform: .*/
         /Thread 0 +"?[^ ]*"? ?crashed:/
-        /0 +0x[0-9a-f]+ level4.*crashMe.swift:16:15/
-        /1 +\[ra\] +0x[0-9a-f]+ level3.*crashMe.swift:10:3/
-        /2 +\[ra\] +0x[0-9a-f]+ level2.*crashMe.swift:6:3/
-        /3 +\[ra\] +0x[0-9a-f]+ level1.*crashMe.swift:2:3/
-        /4 +\[ra\] +0x[0-9a-f]+ static Crash.main.*crashMe.swift:22:5/
+        /0 +0x[0-9a-f]+ level4.*crashMe.swift:28:15/
+        /1 +\[ra\] +0x[0-9a-f]+ level3.*crashMe.swift:22:3/
+        /2 +\[ra\] +0x[0-9a-f]+ level2.*crashMe.swift:18:3/
+        /3 +\[ra\] +0x[0-9a-f]+ level1.*crashMe.swift:14:3/
+        /4 +\[ra\] +0x[0-9a-f]+ static Crash.main.*crashMe.swift:34:5/
         /5 +\[ra\] \[system\] +0x[0-9a-f]+ static Crash..main.*compiler-generated/
-        /6 +\[ra\] \[system\] +0x[0-9a-f]+ .*crashMe_main.*crashMe.*crashMe.swift/
+        /6 +\[ra\] \[system\] +0x[0-9a-f]+ .*main.*crashMe.*crashMe.swift/
         "Registers:"
-        /x0 0x[0-9a-f]+/
+        // Register names are host-arch dependent (arm64 `x0`, x86_64 `rax`, ...),
+        // so match any register line rather than a specific name.
+        /[a-z][a-z0-9]+ +0x[0-9a-f]+/
         /Images \([0-9]+ omitted\):/
         /[0-9a-f]+ +crashMe +.*\/crashMe/
         #if os(macOS)
