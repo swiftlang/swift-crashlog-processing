@@ -22,3 +22,14 @@ jobs:
       # to diff against yet. Re-enable if this becomes a package that other
       # projects depend on the API.
       api_breakage_check_enabled: false
+  tests:
+    name: Test
+    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.11
+    with:
+      # start with just Linux, then add Windows
+      enable_windows_checks: false
+      # while testing, start with only nightly, because we need some very new
+      # additions to the Runtime module that are only in recent ish 6.5.x
+      # we are also allowing only Jammy, Ubuntu 24.04 LTS runner on x86_64
+      # to begin with. Add others once this is working.
+      linux_swift_versions: "[ \"nightly-main\" ]"
