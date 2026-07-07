@@ -16,6 +16,13 @@
 
 import PackageDescription
 
+// These settings should not be required but are driven from rdar://180298611
+// Once Linux is passing, we might be able to limit these settings to only Windows builds.
+let swiftSettingsRDAR180298611: [SwiftSetting] = [
+  .interoperabilityMode(.Cxx),
+  .unsafeFlags(["-enable-library-evolution", "-emit-module-interface"]),
+]
+
 var products: [PackageDescription.Product] =
   [
     .executable(
@@ -51,16 +58,12 @@ var targets: [PackageDescription.Target] =
     ),
     .target(
       name: "MSVCNameDemangler",
-      swiftSettings: [
-        .interoperabilityMode(.Cxx)
-      ]
+      swiftSettings: swiftSettingsRDAR180298611
     ),
     .target(
       name: "SwiftSymbolicate",
       dependencies: ["Minidump", "MSVCNameDemangler"],
-      swiftSettings: [
-        .interoperabilityMode(.Cxx)
-      ]
+      swiftSettings: swiftSettingsRDAR180298611
     ),
     .executableTarget(
       name: "swift-symbolicate",
@@ -68,9 +71,7 @@ var targets: [PackageDescription.Target] =
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
         "SwiftSymbolicate",
       ],
-      swiftSettings: [
-        .interoperabilityMode(.Cxx)
-      ]
+      swiftSettings: swiftSettingsRDAR180298611
     ),
     .executableTarget(
       name: "crashMe"
@@ -112,9 +113,7 @@ targets.append(contentsOf: [
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
         "SwiftSymbolicate",
       ],
-      swiftSettings: [
-        .interoperabilityMode(.Cxx)
-      ],
+      swiftSettings: swiftSettingsRDAR180298611,
     )
   )
 #endif
@@ -144,9 +143,7 @@ let testTarget: PackageDescription.Target =
   .testTarget(
     name: "swift-symbolicateTests",
     dependencies: testTargetDeps,
-    swiftSettings: [
-      .interoperabilityMode(.Cxx)
-    ]
+    swiftSettings: swiftSettingsRDAR180298611
   )
 
 targets.append(testTarget)
