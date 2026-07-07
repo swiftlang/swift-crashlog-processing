@@ -1,4 +1,4 @@
-# Simple Symbol Query Protocol (SSQP)#
+# Simple Symbol Query Protocol (SSQP) #
 
 Frequently when diagnosing computer programs there is a need to retrieve additional information about the program beyond what was required for a computer to run it. This is accomplished by having a network service, the 'symbol server', which provides the additional information on demand. A diagnostic tool such as a debugger or profiler act as symbol server clients, submitting requests for additional information they need. 
 
@@ -50,8 +50,8 @@ Clients are strongly recommended to only work with trusted services, harden agai
 
 This document was compiled by Claude Code (Claude Opus 4.6, Anthropic) from its training data knowledge. The information is derived from the following sources present in the model's training corpus:
 
-- **Microsoft documentation** -- "Symbol Stores and Symbol Servers" and the Simple Symbol Query Protocol specification on github.com/dotnet/symstore
-- **dotnet/symstore repository** -- the reference implementation and protocol specification for SSQP (`https://github.com/dotnet/symstore`)
+- **Microsoft documentation** -- "Symbol Stores and Symbol Servers" and the Simple Symbol Query Protocol specification on github.com/dotnet/symstore (https://github.com/dotnet/symstore/blob/main/docs/specs/SSQP_Key_Conventions.md)
+- **dotnet/symstore repository** -- the reference implementation and protocol specification for SSQP (`https://github.com/dotnet/symstore`, now archived)
 - **Microsoft PE/COFF specification** -- debug directory entries and CodeView record structures used to derive client keys
 
 **Note**: This document describes the protocol as specified in the dotnet/symstore repository. Details should be verified against the current specification if used for production implementation work.

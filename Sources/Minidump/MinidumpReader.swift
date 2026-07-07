@@ -54,8 +54,6 @@ public struct MinidumpReader {
       exception: exception)
   }
 
-  // MARK: - Header
-
   private func readHeader() throws -> MinidumpHeader {
     guard data.count >= MemoryLayout<MinidumpHeader>.size else {
       throw MinidumpError.truncatedFile
@@ -74,8 +72,6 @@ public struct MinidumpReader {
     return header
   }
 
-  // MARK: - Directories
-
   private func readDirectories(count: Int, at offset: Int) throws -> [MinidumpDirectory] {
     let stride = MemoryLayout<MinidumpDirectory>.size
     let endOffset = offset + count * stride
@@ -93,8 +89,6 @@ public struct MinidumpReader {
   {
     directories.first { $0.streamType == type.rawValue }
   }
-
-  // MARK: - System Info
 
   private func readSystemInfo(directories: [MinidumpDirectory]) throws -> MinidumpSystemInfo {
     guard let dir = findStream(.systemInfo, in: directories) else {
@@ -126,8 +120,6 @@ public struct MinidumpReader {
     }
   }
 
-  // MARK: - Modules
-
   private func readModules(directories: [MinidumpDirectory]) throws -> [MinidumpFile.ModuleInfo] {
     guard let dir = findStream(.moduleList, in: directories) else {
       return []
@@ -157,8 +149,6 @@ public struct MinidumpReader {
     }
   }
 
-  // MARK: - Exception
-
   private func readException(directories: [MinidumpDirectory]) throws -> MinidumpFile.ExceptionInfo?
   {
     guard let dir = findStream(.exception, in: directories) else {
@@ -177,8 +167,6 @@ public struct MinidumpReader {
       code: stream.exceptionRecord.exceptionCode,
       address: stream.exceptionRecord.exceptionAddress)
   }
-
-  // MARK: - Threads
 
   private func readThreads(
     directories: [MinidumpDirectory], architecture: MinidumpFile.Architecture
@@ -212,8 +200,6 @@ public struct MinidumpReader {
         registers: registers)
     }
   }
-
-  // MARK: - Register Context
 
   private func readRegisterContext(
     at offset: Int, size: Int, architecture: MinidumpFile.Architecture
@@ -298,15 +284,13 @@ public struct MinidumpReader {
   }
 
   private func readX86Context(at offset: Int, size: Int) -> MinidumpFile.RegisterContext {
-    // i386 CONTEXT layout (from Windows SDK):
-    // 0x9C: eip, 0xC4: esp, 0xB4: ebp, 0xB0: esi, 0xAC: edi
-    // 0xA4: ebx, 0xA0: edx, 0x9C-4=0x98: ecx, 0xA8: eax
-    // Simplified: use the standard Windows i386 CONTEXT offsets
-    guard size >= 0xCC else {
+    // see https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-wow64_context
+    // for example... this is the i386 (32 bit Intel) context area as defined by Windows (win32)
+
+    guard size >= 0xC8 else {
       return MinidumpFile.RegisterContext(named: [:], instructionPointer: 0, stackPointer: 0)
     }
 
-    // Windows i386 CONTEXT offsets
     let edi: UInt32 = load(at: offset + 0x9C)
     let esi: UInt32 = load(at: offset + 0xA0)
     let ebx: UInt32 = load(at: offset + 0xA4)
@@ -328,21 +312,15 @@ public struct MinidumpReader {
       named: named, instructionPointer: UInt64(eip), stackPointer: UInt64(esp))
   }
 
-  // MARK: - Stack Walking
-
   private func readStackFrames(
     thread: MinidumpThread, registers: MinidumpFile.RegisterContext,
     architecture: MinidumpFile.Architecture
   ) -> [UInt64] {
-    // The minidump contains the raw stack memory but not unwound frames.
-    // Without a full stack unwinder, we can only provide the instruction pointer
-    // as the single frame. A full implementation would walk the stack using
-    // frame pointers or unwind tables.
+    // This simplified version only contains the top stack frame.
+    // Can be changed to a full stack walk later if needed.
     guard registers.instructionPointer != 0 else { return [] }
     return [registers.instructionPointer]
   }
-
-  // MARK: - Strings
 
   private func readMinidumpString(at offset: Int) -> String? {
     guard offset + 4 <= data.count else { return nil }
@@ -357,8 +335,7 @@ public struct MinidumpReader {
     return String(data: stringData, encoding: .utf16LittleEndian)
   }
 
-  // MARK: - CodeView Record
-
+  // read codeview record
   private func readCvRecord(at offset: Int, size: Int) -> String? {
     guard size >= 24, offset + size <= data.count else { return nil }
 
@@ -378,10 +355,8 @@ public struct MinidumpReader {
     return guidHex + ageHex
   }
 
-  // MARK: - Helpers
-
   private func load<T>(at offset: Int) -> T {
-    data.withUnsafeBytes { buffer in
+    return data.withUnsafeBytes { buffer in
       buffer.loadUnaligned(fromByteOffset: offset, as: T.self)
     }
   }
