@@ -24,6 +24,7 @@ jobs:
       api_breakage_check_enabled: false
   tests:
     name: Test
+    needs: soundness
     uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.11
     with:
       # start with just Linux, then add Windows

@@ -12,8 +12,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// The swift-tools-version declares the minimum version of Swift required to build this package.
-
 import PackageDescription
 
 // These settings should not be required but are driven from rdar://180298611
