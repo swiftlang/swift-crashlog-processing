@@ -34,3 +34,59 @@ jobs:
       # we are also allowing only Jammy, Ubuntu 24.04 LTS runner on x86_64
       # to begin with. Add others once this is working.
       linux_swift_versions: "[ \"nightly-main\" ]"
+      linux_host_archs: "[ \"x86_64\", \"arm64\" ]"
+
+  # Purely informational: the Swift Linux backtracer only has a frame-pointer
+  # unwinder (no DWARF EH unwinder yet), so threads parked in glibc code that
+  # omits frame pointers (e.g. the asm sleep/nanosleep syscall wrappers) cannot
+  # be unwound past their top frame. This job inspects the glibc used by the
+  # *same container image the tests run in* (jammy, x86_64) to show whether its
+  # hot paths keep a frame pointer. It must never block the workflow, so it is
+  # marked continue-on-error and the script always exits 0.
+  frame-pointer-diagnostic:
+    name: Frame pointer diagnostic (non-blocking)
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    container:
+      image: swiftlang/swift:nightly-main-jammy
+    steps:
+      - name: Inspect glibc for frame pointers
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+
+          echo "== environment =="
+          uname -a || true
+          (cat /etc/os-release 2>/dev/null | head -3) || true
+
+          libc=$(readlink -f /lib/x86_64-linux-gnu/libc.so.6 2>/dev/null)
+          if [ -z "$libc" ]; then
+            libc=$(readlink -f /lib/*/libc.so.6 2>/dev/null | head -1)
+          fi
+          echo "libc: ${libc:-<not found>}"
+
+          if ! command -v objdump >/dev/null 2>&1; then
+            echo "objdump not present; attempting to install binutils (non-fatal)"
+            (apt-get update -y && apt-get install -y binutils) >/dev/null 2>&1 || true
+          fi
+
+          if command -v objdump >/dev/null 2>&1 && [ -n "$libc" ]; then
+            for fn in nanosleep clock_nanosleep __nanosleep sleep; do
+              echo "=== $fn ==="
+              objdump -d "$libc" 2>/dev/null \
+                | awk -v f="<$fn>:" '$0 ~ f {p=1} p{print; if (/\tret/) exit}' \
+                | head -15
+            done
+            echo
+            echo "How to read this:"
+            echo "  * 'push %rbp' then 'mov %rsp,%rbp' near the top => frame pointer IS maintained."
+            echo "  * straight into 'sub \$0x..,%rsp' / a syscall with no 'push %rbp' => frame pointer OMITTED,"
+            echo "    so the frame-pointer-only unwinder truncates a thread parked here to a single frame."
+          else
+            echo "Could not disassemble libc (objdump unavailable). Skipping - non-fatal."
+          fi
+
+          # Never fail the workflow regardless of what happened above.
+          exit 0
+

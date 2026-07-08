@@ -658,13 +658,20 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
       #if os(macOS)
         #expect(lastSymbolicatedFrame.symbol == "start")
         #expect(lastSymbolicatedFrame.image == "dyld")
+        #expect(lastSymbolicatedFrame.sourceLocation == nil)
       #elseif os(Linux)
-        #expect(lastSymbolicatedFrame.symbol == "<unknown>")
-        #expect(lastSymbolicatedFrame.offset == 0)
-        #expect(lastSymbolicatedFrame.description == "[1] libc.so.6 <unknown>")
-        #expect(lastSymbolicatedFrame.image == "libc.so.6")
+        #if arch(arm64)
+          #expect(lastSymbolicatedFrame.symbol == "<unknown>")
+          #expect(lastSymbolicatedFrame.offset == 0)
+          #expect(lastSymbolicatedFrame.description == "[1] libc.so.6 <unknown>")
+          #expect(lastSymbolicatedFrame.image == "libc.so.6")
+          #expect(lastSymbolicatedFrame.sourceLocation == nil)
+        #elseif arch(x86_64)
+          #expect(lastSymbolicatedFrame.symbol == "main")
+          #expect(lastSymbolicatedFrame.image == "crashMe")
+          #expect(lastSymbolicatedFrame.sourceLocation?.file.hasSuffix("crashMe.swift") == true)
+        #endif
       #endif
-      #expect(lastSymbolicatedFrame.sourceLocation == nil)
     }
 
     @available(macOS 15.0, *)
@@ -818,7 +825,6 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
         })
 
       #if os(Linux)
-        // due to rdar://165040681 we can only check for symbols on one thread
         result.expect(separator: "{") {
           "Text before log..."
           "\"crashed\": true"
@@ -826,13 +832,21 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
           "...text after log."
         }
 
-        result.expect(separator: "{") {
-          "Text before log..."
-          /"address".*0x[0-9a-f].*symbol.*main/
-          "\"crashed\": true"
-          /"address".*0x[0-9a-f].*symbol.*reallyCrash/
-          "...text after log."
-        }
+        // The Swift Linux backtracer is frame-pointer-only (no DWARF EH unwinder),
+        // and the x86_64 jammy container's glibc omits frame pointers, so idle
+        // threads parked in glibc can't be unwound and never surface a `main`
+        // symbol. The arm64 container's glibc keeps a usable frame chain, so this
+        // second-thread check runs only on arm64.
+        // Upgrade this if/when we upgrade the container to Ubuntu 24.04 LTS.
+        #if arch(arm64)
+          result.expect(separator: "{") {
+            "Text before log..."
+            /"address".*0x[0-9a-f].*symbol.*main/
+            "\"crashed\": true"
+            /"address".*0x[0-9a-f].*symbol.*reallyCrash/
+            "...text after log."
+          }
+        #endif
 
       #elseif os(macOS)
         // check there are some symbols for more than one thread
@@ -904,15 +918,18 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
           /0x[0-9a-f]+ .* static MultithreadedCrash.spawnThread.*crashMeMultithreaded.*crashMeMultithreaded.swift/
         }
 
-        result.expect {
-          "Signal 11: Backtracing from 0x"
-          /Thread 0.*:/
-          /0x[0-9a-f]+ static MultithreadedCrash.main.*crashMeMultithreaded.*crashMeMultithreaded.swift/
-          /Thread [0-9]+:/
-          /0x[0-9a-f]+ .* static MultithreadedCrash.spawnThread.*crashMeMultithreaded.*crashMeMultithreaded.swift/
-          /Thread [0-9]+:/
-          /0x[0-9a-f]+ .* static MultithreadedCrash.spawnThread.*crashMeMultithreaded.*crashMeMultithreaded.swift/
-        }
+        // See comment above re frame pointers elided on old x86 Linux.
+        #if arch(arm64)
+          result.expect {
+            "Signal 11: Backtracing from 0x"
+            /Thread 0.*:/
+            /0x[0-9a-f]+ static MultithreadedCrash.main.*crashMeMultithreaded.*crashMeMultithreaded.swift/
+            /Thread [0-9]+:/
+            /0x[0-9a-f]+ .* static MultithreadedCrash.spawnThread.*crashMeMultithreaded.*crashMeMultithreaded.swift/
+            /Thread [0-9]+:/
+            /0x[0-9a-f]+ .* static MultithreadedCrash.spawnThread.*crashMeMultithreaded.*crashMeMultithreaded.swift/
+          }
+        #endif
       #elseif os(macOS)
         result.expect {
           "Signal 11: Backtracing from 0x"
