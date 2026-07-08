@@ -51,26 +51,20 @@ jobs:
           set +e
 
           uname -a
-          (cat /etc/os-release 2>/dev/null | head -3)
+          cat /etc/os-release
 
-          libc=$(readlink -f /lib/x86_64-linux-gnu/libc.so.6 2>/dev/null)
-          if [ -z "$libc" ]; then
-            libc=$(readlink -f /lib/*/libc.so.6 2>/dev/null | head -1)
+          libc=$(readlink -f /lib/$(uname -m)-linux-gnu/libc.so.6 2> /dev/null)
+
+          if [ -z "$libc" ]
+          then
+            echo "libc: ${libc}"
+            exit 3
           fi
-          echo "libc: ${libc:-<not found>}"
 
-          if ! command -v objdump >/dev/null 2>&1; then
+          if ! command -v objdump > /dev/null 2> /dev/null
+          then
             echo "objdump not present"
             exit 1
           fi
 
-          if command -v objdump >/dev/null 2>&1 && [ -n "$libc" ]; then
-            for fn in nanosleep clock_nanosleep __nanosleep sleep; do
-              objdump -d "$libc" 2>/dev/null \
-                | awk -v f="<$fn>:" '$0 ~ f {p=1} p{print; if (/\tret/) exit}' \
-                | head -15
-            done
-          else
-            echo "Could not disassemble libc (objdump unavailable)."
-            exit 2
-          fi
+          objdump -d $libc |grep -A10 -e '<__nanosleep.*>:'
