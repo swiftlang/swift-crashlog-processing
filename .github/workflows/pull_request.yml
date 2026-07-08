@@ -34,7 +34,7 @@ jobs:
       # we are also allowing only Jammy, Ubuntu 24.04 LTS runner on x86_64
       # to begin with. Add others once this is working.
       linux_swift_versions: "[ \"nightly-main\" ]"
-      linux_host_archs: "[ \"x86_64\", \"arm64\" ]"
+      linux_host_archs: "[ \"x86_64\", \"aarch64\" ]"
 
   linux-os-arch-diagnostic:
     name: Linux OS/arch diagnostic (arm image)
