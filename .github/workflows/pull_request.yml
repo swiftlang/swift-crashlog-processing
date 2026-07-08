@@ -38,7 +38,7 @@ jobs:
 
   # test if frame pointer is present (remove this check once it's fixed)
   frame-pointer-diagnostic:
-    name: Frame pointer diagnostic
+    name: Frame pointer diagnostic (x86 image)
     continue-on-error: true
     runs-on: ubuntu-24.04
     container:
