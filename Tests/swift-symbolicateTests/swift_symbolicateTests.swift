@@ -378,6 +378,14 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
       #expect(secondFrame.kind == .returnAddress)
       #expect(secondFrame.address == "0x0000000185e65d54")
       #expect(secondFrame.symbol == "start")
+
+      #if arch(arm64)
+        print("simpleJsonRead completed for arm64 architecture")
+      #elseif arch(x86_64)
+        print("simpleJsonRead completed for x86_64 architecture")
+      #else
+        print("simpleJsonRead completed for other architecture")
+      #endif
     }
 
     #if arch(arm64)
