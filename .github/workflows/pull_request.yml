@@ -22,3 +22,48 @@ jobs:
       # to diff against yet. Re-enable if this becomes a package that other
       # projects depend on the API.
       api_breakage_check_enabled: false
+  tests:
+    name: Test
+    needs: soundness
+    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.11
+    with:
+      # start with just Linux, then add Windows
+      enable_windows_checks: false
+      # while testing, start with only nightly, because we need some very new
+      # additions to the Runtime module that are only in recent ish 6.5.x
+      # we are also allowing only Jammy, Ubuntu 24.04 LTS runner on x86_64
+      # to begin with. Add others once this is working.
+      linux_swift_versions: "[ \"nightly-main\" ]"
+      linux_host_archs: "[ \"x86_64\", \"aarch64\" ]"
+
+  # test if frame pointer is present (remove this check once it's fixed)
+  frame-pointer-diagnostic:
+    name: Frame pointer diagnostic (x86 image)
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    container:
+      image: swiftlang/swift:nightly-main-jammy
+    steps:
+      - name: Inspect glibc for frame pointers
+        continue-on-error: true
+        run: |
+          set +e
+
+          uname -a
+          cat /etc/os-release
+
+          libc=$(readlink -f /lib/$(uname -m)-linux-gnu/libc.so.6 2> /dev/null)
+
+          if [ -z "$libc" ]
+          then
+            echo "libc: ${libc}"
+            exit 3
+          fi
+
+          if ! command -v objdump > /dev/null 2> /dev/null
+          then
+            echo "objdump not present"
+            exit 1
+          fi
+
+          objdump -d $libc |grep -A10 -e '<__nanosleep.*>:'
