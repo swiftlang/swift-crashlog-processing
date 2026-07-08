@@ -36,17 +36,6 @@ jobs:
       linux_swift_versions: "[ \"nightly-main\" ]"
       linux_host_archs: "[ \"x86_64\", \"aarch64\" ]"
 
-  linux-os-arch-diagnostic:
-    name: Linux OS/arch diagnostic (arm image)
-    continue-on-error: true
-    runs-on: ubuntu-24.04-arm
-    container:
-      image: swiftlang/swift:nightly-main-jammy
-    steps:
-      - name: OS name
-        run: uname -a
-
-
   # test if frame pointer is present (remove this check once it's fixed)
   frame-pointer-diagnostic:
     name: Frame pointer diagnostic (x86 image)

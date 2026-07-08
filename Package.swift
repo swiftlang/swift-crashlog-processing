@@ -14,18 +14,22 @@
 
 import PackageDescription
 
-// These settings should not be required but are driven from rdar://180298611
-// Once Linux is passing, probably limit these settings to only Windows builds,
-// unless we want to test that turning off resilience still works on linux too.
-// (Probably a good idea to have it tested both paths, with and without resilience.)
-// When rdar://180298611 is resolved, we should be able to remove this workaround.
-let swiftSettingsRDAR180298611: [SwiftSetting] = [
-  .interoperabilityMode(.Cxx),
-  .unsafeFlags([
-    "-enable-library-evolution", "-emit-module-interface",
-    "-no-verify-emitted-module-interface",
-  ]),
-]
+#if os(Windows)
+  // These settings should not be required but are driven from rdar://180298611
+  // Once Linux is passing, probably limit these settings to only Windows builds,
+  // unless we want to test that turning off resilience still works on linux too.
+  // (Probably a good idea to have it tested both paths, with and without resilience.)
+  // When rdar://180298611 is resolved, we should be able to remove this workaround.
+  let swiftSettings: [SwiftSetting] = [
+    .interoperabilityMode(.Cxx),
+    .unsafeFlags([
+      "-enable-library-evolution", "-emit-module-interface",
+      "-no-verify-emitted-module-interface",
+    ]),
+  ]
+#else
+  let swiftSettings: [SwiftSetting] = []
+#endif
 
 var products: [PackageDescription.Product] =
   [
@@ -62,12 +66,12 @@ var targets: [PackageDescription.Target] =
     ),
     .target(
       name: "MSVCNameDemangler",
-      swiftSettings: swiftSettingsRDAR180298611
+      swiftSettings: swiftSettings
     ),
     .target(
       name: "SwiftSymbolicate",
       dependencies: ["Minidump", "MSVCNameDemangler"],
-      swiftSettings: swiftSettingsRDAR180298611
+      swiftSettings: swiftSettings
     ),
     .executableTarget(
       name: "swift-symbolicate",
@@ -75,7 +79,7 @@ var targets: [PackageDescription.Target] =
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
         "SwiftSymbolicate",
       ],
-      swiftSettings: swiftSettingsRDAR180298611
+      swiftSettings: swiftSettings
     ),
     .executableTarget(
       name: "crashMe"
@@ -147,7 +151,7 @@ let testTarget: PackageDescription.Target =
   .testTarget(
     name: "swift-symbolicateTests",
     dependencies: testTargetDeps,
-    swiftSettings: swiftSettingsRDAR180298611
+    swiftSettings: swiftSettings
   )
 
 targets.append(testTarget)
