@@ -27,14 +27,24 @@ jobs:
     needs: soundness
     uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@0.0.11
     with:
-      # start with just Linux, then add Windows
-      enable_windows_checks: false
       # while testing, start with only nightly, because we need some very new
       # additions to the Runtime module that are only in recent ish 6.5.x
-      # we are also allowing only Jammy, Ubuntu 24.04 LTS runner on x86_64
-      # to begin with. Add others once this is working.
+      # It would be worth seeing if we can cherry-pick the changes to 6.4
+      # so we can add those toolchains on linux/mac/windows here.
       linux_swift_versions: "[ \"nightly-main\" ]"
       linux_host_archs: "[ \"x86_64\", \"aarch64\" ]"
+      # The windows swift-nightly container is currently running an old toolkit
+      # which doesn't have the necessary Runtime changes (yet)
+      # keep this disabled until it does
+      enable_windows_checks: false
+      windows_swift_versions: "[ \"nightly-main\" ]"
+      # We need to get the required Runtime changes into 6.4 and into Golden Gate
+      # then run this on a self-hosted macOS runner with Golden Gate in order for this
+      # to work, until then leave it disabled...
+      enable_macos_checks: false
+      macos_versions: "[\"goldengate\"]"
+      macos_xcode_versions: "[\"27.0\"]"
+
 
   # test if frame pointer is present (remove this check once it's fixed)
   frame-pointer-diagnostic:

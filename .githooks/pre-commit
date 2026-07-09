@@ -1,4 +1,13 @@
 #!/bin/sh
+
+# Run any overridden global pre-commit hook first; if it fails, fail this hook too.
+global_hooks="$(git config --get --global core.hooksPath)"
+if [ -n "$global_hooks" ] && [ -x "$global_hooks/pre-commit" ]; then
+  if ! "$global_hooks/pre-commit" "$@"; then
+    exit 1
+  fi
+fi
+
 #
 # Pre-commit hook for staged Swift files:
 #   1. Apply `swift-format format -i` and re-stage, so trivial reformatting
