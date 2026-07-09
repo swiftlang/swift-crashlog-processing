@@ -121,7 +121,7 @@ targets.append(contentsOf: [
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
         "SwiftSymbolicate",
       ],
-      swiftSettings: swiftSettingsRDAR180298611,
+      swiftSettings: swiftSettings,
     )
   )
 #endif
