@@ -14,7 +14,7 @@ concurrency:
 jobs:
   soundness:
     name: Soundness
-    uses: swiftlang/github-workflows/.github/workflows/soundness.yml@0.0.11
+    uses: swiftlang/github-workflows/.github/workflows/soundness.yml@0.0.12
     with:
       # Disabled for now: this tool builds against unreleased `@_spi` Runtime
       # internals and needs an in-development toolchain, so it cannot build on
