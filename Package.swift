@@ -48,7 +48,7 @@ var products: [PackageDescription.Product] =
     .library(name: "Minidump", targets: ["Minidump"]),
     .library(name: "MSVCNameDemangler", targets: ["MSVCNameDemangler"]),
     .library(
-      name: "SwiftSymbolicate", type: .dynamic,
+      name: "SwiftSymbolicate",
       targets: [
         "SwiftSymbolicate"
       ]),
@@ -174,7 +174,7 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.3.0"),
     .package(
-      url: "https://github.com/swiftlang/swift-subprocess.git", branch: "main",
+      url: "https://github.com/swiftlang/swift-subprocess.git", from: "1.0.0",
       traits: ["SubprocessFoundation"]),
   ],
   targets: targets

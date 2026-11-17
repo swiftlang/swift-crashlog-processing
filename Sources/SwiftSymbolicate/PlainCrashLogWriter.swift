@@ -19,6 +19,10 @@ import Runtime
 @_spi(CrashLog) import Runtime
 @_spi(Internal) import Runtime
 
+#if os(Windows)
+import WinSDK
+#endif
+
 /// The output width strategy for formatted crash log output.
 public enum LogWidth {
   /// Automatically detect the terminal width.
@@ -96,10 +100,10 @@ public enum LogWidth {
       formattedWidth = w
     } else {  // .auto
       #if os(Windows)
+        let stdOutHandle = HANDLE(bitPattern: _get_osfhandle(_fileno(stdout)))!
         var consoleInfo = CONSOLE_SCREEN_BUFFER_INFO()
-        if let outputStream,
-          GetConsoleScreenBufferInfo(
-            outputStream.handle,
+        if GetConsoleScreenBufferInfo(
+            stdOutHandle,
             &consoleInfo)
         {
           formattedWidth = Int(consoleInfo.dwSize.X)
