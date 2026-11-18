@@ -76,11 +76,11 @@ extension UsingLogStream {
       output: .string(limit: 40960),
       error: .combinedWithOutput)
     if isJson,
-      let log = crashRun.standardOutput.split(separator: "\n").first(where: { $0.hasPrefix("{") })
+      let log = crashRun.standardOutput.split(whereSeparator: \.isNewline).first(where: { $0.hasPrefix("{") })
     {
       return String(log)
     } else {
-      return crashRun.standardOutput ?? "---"
+      return crashRun.standardOutput ?? ""
     }
   }
 }
@@ -308,7 +308,7 @@ extension String {
 
     #expect(
       failedMatch == nil,
-      "pattern was not found, could not find \(matches[safe: failedMatch]) in \(self)",
+      "pattern was not found, could not find \(matches[safe: failedMatch]) [\(failedMatch)] in \(self)",
       sourceLocation: failureLocation)
   }
 }

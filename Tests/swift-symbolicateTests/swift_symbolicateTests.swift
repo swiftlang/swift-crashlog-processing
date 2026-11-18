@@ -602,9 +602,14 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
       #expect(images?.wordSize == .sixtyFourBit)
 
       let firstImg = try #require(images?.images.first)
+      #if os(Windows)
+      #expect(firstImg.name == "crashMe.exe")
+      #expect(firstImg.path?.hasSuffix("crashMe.exe") == true)
+      #else
       #expect(firstImg.name == "crashMe")
       #expect(firstImg.path?.hasSuffix("crashMe") == true)
       #expect(hex(firstImg.uniqueID ?? []) != "")
+      #endif
       let imageBaseAddress = firstImg.baseAddress
       let imageEndAddress = firstImg.endOfText
       #expect(imageBaseAddress != 0)
@@ -618,7 +623,11 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
           with: images, options: [.showInlineFrames, .showSourceLocations])
       )
 
+      #if os(Windows)
+      #expect(crashedThreadSymbolicatedBacktrace.images.first?.name == "crashMe.exe")
+      #else
       #expect(crashedThreadSymbolicatedBacktrace.images.first?.name == "crashMe")
+      #endif
       #expect(
         crashedThreadSymbolicatedBacktrace.images.first?.baseAddress.description.hasPrefix("0x")
           == true)
@@ -640,7 +649,11 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
         #expect(firstSymbolicatedFrame.symbol == "$s7crashMe6level4yyF")
       #endif
       #expect((firstSymbolicatedFrame.offset ?? 0) > 0)
+      #if os(Windows)
+      #expect(firstSymbolicatedFrame.image == "crashMe.exe")
+      #else
       #expect(firstSymbolicatedFrame.image == "crashMe")
+      #endif
       #expect(firstSymbolicatedFrame.sourceLocation?.file.hasSuffix("crashMe.swift") == true)
       #expect(firstSymbolicatedFrame.sourceLocation?.line == 28)
       #expect(firstSymbolicatedFrame.sourceLocation?.column == 15)
@@ -655,7 +668,11 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
         #expect(secondSymbolicatedFrame.symbol == "$s7crashMe6level3yyF")
       #endif
       #expect(secondSymbolicatedFrame.offset ?? 0 > 0)
+      #if os(Windows)
+      #expect(secondSymbolicatedFrame.image == "crashMe.exe")
+      #else
       #expect(secondSymbolicatedFrame.image == "crashMe")
+      #endif
       #expect(secondSymbolicatedFrame.sourceLocation?.file.hasSuffix("crashMe.swift") == true)
       #expect(secondSymbolicatedFrame.sourceLocation?.line == 22)
       #expect(secondSymbolicatedFrame.sourceLocation?.column == 3)
@@ -685,7 +702,24 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
     @available(macOS 15.0, *)
     @Test func symbolicatePlainTextBacktrace() async throws {
       let unsymbolicatedPlainCrashLog = try await getCrashLog(isJson: false, isSymbolicated: false)
-
+      #if os(Windows)
+      unsymbolicatedPlainCrashLog.expect(separator: "\r\n") {
+        /Exception c0000005: Backtracing from 0x[0-9a-f].*done/
+        "Program crashed: Access violation at "
+        /Platform: .*/
+        /Thread 0 +"?[^ ]*"? ?crashed:/
+        /0 +0x[0-9a-f]+/
+        /1 +\[ra\] +0x[0-9a-f]+/
+        "Registers:"
+        // Register names are host-arch dependent (arm64 `x0`, x86_64 `rax`, ...),
+        // so match any register line rather than a specific name.
+        /[a-z][a-z0-9]+ +0x[0-9a-f]+/
+        /Images \([0-9]+ omitted\):/
+        /.no build ID. +crashMe\.exe +.*\\crashMe\.exe/
+        /[0-9a-f]+ +ntdll\.dll +.*\\ntdll\.dll/
+        /Backtrace took [0-9.]+s/
+      }
+      #else
       unsymbolicatedPlainCrashLog.expect {
         "Program crashed: Bad pointer dereference at 0x0000000000000006"
         /Platform: .*/
@@ -703,6 +737,7 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
         #endif
         /Backtrace took [0-9.]+s/
       }
+      #endif
 
       let reader = PlainCrashLogReader<HostContext.Address>(
         plainCrashLog: unsymbolicatedPlainCrashLog)
@@ -725,6 +760,28 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
         haveSymbolicatedThreads: true)
       let symbolicatedPlainTextLog = plainCrashLogWriter.write()
 
+      #if os(Windows)
+      symbolicatedPlainTextLog.expect {
+        "Program crashed: Access violation at 0x0000000000000006"
+        /Platform: .*/
+        /Thread 0 +"?[^ ]*"? ?crashed:/
+        /0 +0x[0-9a-f]+ level4.*crashMe\.swift:28:15/
+        /1 +\[ra\] +0x[0-9a-f]+ level3.*crashMe\.swift:22:3/
+        /2 +\[ra\] +0x[0-9a-f]+ level2.*crashMe\.swift:18:3/
+        /3 +\[ra\] +0x[0-9a-f]+ level1.*crashMe\.swift:14:3/
+        /4 +\[ra\] +0x[0-9a-f]+ static Crash.main.*crashMe\.swift:34:5/
+        /5 +\[ra\] \[system\] +0x[0-9a-f]+ static Crash..main.*compiler-generated/
+        /6 +\[ra\] \[system\] +0x[0-9a-f]+ .*main.*crashMe.*crashMe\.swift/
+        "Registers:"
+        // Register names are host-arch dependent (arm64 `x0`, x86_64 `rax`, ...),
+        // so match any register line rather than a specific name.
+        /[a-z][a-z0-9]+ +0x[0-9a-f]+/
+        /Images \([0-9]+ omitted\):/
+        /.no build ID. +crashMe\.exe +.*\\crashMe\.exe/
+        /[0-9a-f]+ +ntdll\.dll +.*\\ntdll\.dll/
+        /Backtrace took [0-9.]+s/
+      }      
+      #else
       symbolicatedPlainTextLog.expect {
         "Program crashed: Bad pointer dereference at 0x0000000000000006"
         /Platform: .*/
@@ -747,6 +804,7 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
         #endif
         /Backtrace took [0-9.]+s/
       }
+      #endif
     }
   }
 
@@ -802,6 +860,45 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
       }
     }
 
+    @available(macOS 15.0, *)
+    @Test func testPlainTextCrashDumpWithSymbolication() async throws {
+      let plainCrashLog = try await getCrashLog(isJson: false, isSymbolicated: false)
+
+      // this is a more realistic test of streaming with some output before a crash
+      // and possible shell output afterwards
+      let result = try #require(
+        try await testScan(
+          sampleData:
+            """
+            Hello, World!
+
+            \(plainCrashLog)
+
+            zsh: segmentation fault  ./crashMe
+            """
+        ) { crashDump in
+          try symbolicatePlainTextCrashLog(data: crashDump)
+        }
+      )
+
+      #if os(Windows)
+      result.expect {
+        "Hello, World!"
+        "Exception c0000005: Backtracing from 0x"
+        /[0-9a-f]+ .*main.*crashMe.*crashMe.swift/
+        "zsh: segmentation fault  ./crashMe"
+      }
+      #else
+      result.expect {
+        "Hello, World!"
+        "Signal 11: Backtracing from 0x"
+        /[0-9a-f]+ .*main.*crashMe.*crashMe.swift/
+        "zsh: segmentation fault  ./crashMe"
+      }
+      #endif
+    }
+
+    #if !os(Windows)
     @available(macOS 15.0, *)
     @Test func testJsonCrashDumpWithSymbolicationMultiThread() async throws {
       let jsonCrashLog = try await getCrashLog(
@@ -869,35 +966,6 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
     }
 
     @available(macOS 15.0, *)
-    @Test func testPlainTextCrashDumpWithSymbolication() async throws {
-      let plainCrashLog = try await getCrashLog(isJson: false, isSymbolicated: false)
-
-      // this is a more realistic test of streaming with some output before a crash
-      // and possible shell output afterwards
-      let result = try #require(
-        try await testScan(
-          sampleData:
-            """
-            Hello, World!
-
-            \(plainCrashLog)
-
-            zsh: segmentation fault  ./crashMe
-            """
-        ) { crashDump in
-          try symbolicatePlainTextCrashLog(data: crashDump)
-        }
-      )
-
-      result.expect {
-        "Hello, World!"
-        "Signal 11: Backtracing from 0x"
-        /[0-9a-f]+ .*main.*crashMe.*crashMe.swift/
-        "zsh: segmentation fault  ./crashMe"
-      }
-    }
-
-    @available(macOS 15.0, *)
     @Test func testPlainTextCrashDumpWithSymbolicationMulitpleThreads() async throws {
       let plainCrashLogMultithreaded = try await getCrashLog(
         isJson: false,
@@ -952,6 +1020,7 @@ typealias HostCrashLog = CrashLog<HostContext.Address>
         }
       #endif
     }
+    #endif
   }
 
   struct EdgeCasesAndFuzzing: UsingLogStream {
